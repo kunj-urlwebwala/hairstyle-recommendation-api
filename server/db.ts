@@ -2,7 +2,10 @@ import { createRequire } from "module";
 import { mkdirSync } from "fs";
 import path from "path";
 import type { DatabaseSync } from "node:sqlite";
-import type { HairstyleRecommendation, StyleAnalysis } from "../shared/consultation";
+import type {
+  HairstyleRecommendation,
+  StyleAnalysis,
+} from "../shared/consultation";
 import type {
   ConsultationRecord,
   InsertConsultationRecord,
@@ -15,7 +18,8 @@ import type {
 // Resolved at runtime so bundlers/test runners that predate node:sqlite
 // do not try to transform the built-in module.
 const require = createRequire(import.meta.url);
-const { DatabaseSync: SqliteDatabase } = require("node:sqlite") as typeof import("node:sqlite");
+const { DatabaseSync: SqliteDatabase } =
+  require("node:sqlite") as typeof import("node:sqlite");
 
 // The SQLite file lives in ./database by default; create the folder up front.
 const databasePath = (() => {
@@ -144,11 +148,9 @@ export async function getUserById(id: number): Promise<User | undefined> {
 
 export async function touchLastSignedIn(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("UPDATE users SET last_signed_in = ?, updated_at = ? WHERE id = ?").run(
-    Date.now(),
-    Date.now(),
-    id,
-  );
+  db.prepare(
+    "UPDATE users SET last_signed_in = ?, updated_at = ? WHERE id = ?",
+  ).run(Date.now(), Date.now(), id);
 }
 
 function rowToConsultation(row: Record<string, unknown>): ConsultationRecord {
@@ -156,15 +158,23 @@ function rowToConsultation(row: Record<string, unknown>): ConsultationRecord {
     id: String(row.id),
     userId: Number(row.user_id),
     sourceImagePath: String(row.source_image_path),
-    requirements: JSON.parse(String(row.requirements)) as Record<string, unknown>,
+    requirements: JSON.parse(String(row.requirements)) as Record<
+      string,
+      unknown
+    >,
     analysis: JSON.parse(String(row.analysis)) as StyleAnalysis,
-    recommendations: JSON.parse(String(row.recommendations)) as HairstyleRecommendation[],
-    analysisModel: row.analysis_model === null ? null : String(row.analysis_model),
+    recommendations: JSON.parse(
+      String(row.recommendations),
+    ) as HairstyleRecommendation[],
+    analysisModel:
+      row.analysis_model === null ? null : String(row.analysis_model),
     createdAt: new Date(Number(row.created_at)),
   };
 }
 
-export async function createConsultationRecord(record: InsertConsultationRecord): Promise<ConsultationRecord> {
+export async function createConsultationRecord(
+  record: InsertConsultationRecord,
+): Promise<ConsultationRecord> {
   const db = getDb();
   const createdAt = record.createdAt?.getTime() ?? Date.now();
 
@@ -182,17 +192,26 @@ export async function createConsultationRecord(record: InsertConsultationRecord)
     createdAt,
   );
 
-  const row = getDb().prepare("SELECT * FROM consultations WHERE id = ? LIMIT 1").get(record.id);
+  const row = getDb()
+    .prepare("SELECT * FROM consultations WHERE id = ? LIMIT 1")
+    .get(record.id);
   if (!row) throw new Error(`Failed to load created consultation ${record.id}`);
   return rowToConsultation(row as unknown as Record<string, unknown>);
 }
 
-export async function listConsultationsByUser(userId: number, limit = 20): Promise<ConsultationRecord[]> {
+export async function listConsultationsByUser(
+  userId: number,
+  limit = 20,
+): Promise<ConsultationRecord[]> {
   const db = getDb();
   const rows = db
-    .prepare("SELECT * FROM consultations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?")
+    .prepare(
+      "SELECT * FROM consultations WHERE user_id = ? ORDER BY created_at DESC LIMIT ?",
+    )
     .all(userId, limit);
-  return rows.map((row) => rowToConsultation(row as unknown as Record<string, unknown>));
+  return rows.map((row) =>
+    rowToConsultation(row as unknown as Record<string, unknown>),
+  );
 }
 
 function rowToSavedLook(row: Record<string, unknown>): SavedLook {
@@ -200,13 +219,17 @@ function rowToSavedLook(row: Record<string, unknown>): SavedLook {
     id: String(row.id),
     userId: Number(row.user_id),
     consultationId: String(row.consultation_id),
-    recommendation: JSON.parse(String(row.recommendation)) as HairstyleRecommendation,
+    recommendation: JSON.parse(
+      String(row.recommendation),
+    ) as HairstyleRecommendation,
     previewImageUrl: String(row.preview_image_url),
     createdAt: new Date(Number(row.created_at)),
   };
 }
 
-export async function createSavedLook(look: InsertSavedLook): Promise<SavedLook> {
+export async function createSavedLook(
+  look: InsertSavedLook,
+): Promise<SavedLook> {
   const db = getDb();
   const createdAt = look.createdAt?.getTime() ?? Date.now();
 
@@ -222,26 +245,43 @@ export async function createSavedLook(look: InsertSavedLook): Promise<SavedLook>
     createdAt,
   );
 
-  const row = getDb().prepare("SELECT * FROM saved_looks WHERE id = ? LIMIT 1").get(look.id);
+  const row = getDb()
+    .prepare("SELECT * FROM saved_looks WHERE id = ? LIMIT 1")
+    .get(look.id);
   if (!row) throw new Error(`Failed to load created saved look ${look.id}`);
   return rowToSavedLook(row as unknown as Record<string, unknown>);
 }
 
-export async function listSavedLooksByUser(userId: number): Promise<SavedLook[]> {
+export async function listSavedLooksByUser(
+  userId: number,
+): Promise<SavedLook[]> {
   const db = getDb();
   const rows = db
-    .prepare("SELECT * FROM saved_looks WHERE user_id = ? ORDER BY created_at DESC")
+    .prepare(
+      "SELECT * FROM saved_looks WHERE user_id = ? ORDER BY created_at DESC",
+    )
     .all(userId);
-  return rows.map((row) => rowToSavedLook(row as unknown as Record<string, unknown>));
+  return rows.map((row) =>
+    rowToSavedLook(row as unknown as Record<string, unknown>),
+  );
 }
 
-export async function deleteSavedLook(userId: number, id: string): Promise<boolean> {
+export async function deleteSavedLook(
+  userId: number,
+  id: string,
+): Promise<boolean> {
   const db = getDb();
-  const result = db.prepare("DELETE FROM saved_looks WHERE user_id = ? AND id = ?").run(userId, id);
+  const result = db
+    .prepare("DELETE FROM saved_looks WHERE user_id = ? AND id = ?")
+    .run(userId, id);
   return Number(result.changes) > 0;
 }
 
-export async function createPasswordResetOtp(email: string, otpHash: string, expiresAtMs: number): Promise<void> {
+export async function createPasswordResetOtp(
+  email: string,
+  otpHash: string,
+  expiresAtMs: number,
+): Promise<void> {
   const db = getDb();
   const now = Date.now();
 
@@ -256,9 +296,16 @@ export async function createPasswordResetOtp(email: string, otpHash: string, exp
   ).run(email.toLowerCase(), otpHash, expiresAtMs, now);
 }
 
-export type PendingResetOtp = { id: number; otpHash: string; expiresAt: number; attempts: number };
+export type PendingResetOtp = {
+  id: number;
+  otpHash: string;
+  expiresAt: number;
+  attempts: number;
+};
 
-export async function getPendingResetOtp(email: string): Promise<PendingResetOtp | undefined> {
+export async function getPendingResetOtp(
+  email: string,
+): Promise<PendingResetOtp | undefined> {
   const db = getDb();
   const row = db
     .prepare(
@@ -280,23 +327,33 @@ export async function getPendingResetOtp(email: string): Promise<PendingResetOtp
 
 export async function registerResetOtpAttempt(id: number): Promise<number> {
   const db = getDb();
-  db.prepare("UPDATE password_reset_otps SET attempts = attempts + 1 WHERE id = ?").run(id);
-  const row = db.prepare("SELECT attempts FROM password_reset_otps WHERE id = ?").get(id);
-  return Number((row as unknown as Record<string, unknown> | undefined)?.attempts ?? 0);
+  db.prepare(
+    "UPDATE password_reset_otps SET attempts = attempts + 1 WHERE id = ?",
+  ).run(id);
+  const row = db
+    .prepare("SELECT attempts FROM password_reset_otps WHERE id = ?")
+    .get(id);
+  return Number(
+    (row as unknown as Record<string, unknown> | undefined)?.attempts ?? 0,
+  );
 }
 
 export async function consumeResetOtp(id: number): Promise<void> {
   const db = getDb();
-  db.prepare("UPDATE password_reset_otps SET consumed_at = ? WHERE id = ?").run(Date.now(), id);
+  db.prepare("UPDATE password_reset_otps SET consumed_at = ? WHERE id = ?").run(
+    Date.now(),
+    id,
+  );
 }
 
-export async function updateUserPassword(userId: number, passwordHash: string): Promise<void> {
+export async function updateUserPassword(
+  userId: number,
+  passwordHash: string,
+): Promise<void> {
   const db = getDb();
-  db.prepare("UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?").run(
-    passwordHash,
-    Date.now(),
-    userId,
-  );
+  db.prepare(
+    "UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?",
+  ).run(passwordHash, Date.now(), userId);
 }
 
 // TODO: add feature queries here as your schema grows.

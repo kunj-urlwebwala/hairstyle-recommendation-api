@@ -30,7 +30,9 @@ export async function storagePut(
   return { key, url: `/uploads/${key}` };
 }
 
-export async function storageGet(relKey: string): Promise<{ key: string; url: string }> {
+export async function storageGet(
+  relKey: string,
+): Promise<{ key: string; url: string }> {
   const key = normalizeKey(relKey);
   return { key, url: `/uploads/${key}` };
 }

@@ -8,7 +8,9 @@ export type TrpcContext = {
   user: User;
 };
 
-export async function createContext(opts: CreateExpressContextOptions): Promise<TrpcContext> {
+export async function createContext(
+  opts: CreateExpressContextOptions,
+): Promise<TrpcContext> {
   const dummyEmail = "local@mirror.app";
   let user = await db.getUserByEmail(dummyEmail);
   if (!user) {

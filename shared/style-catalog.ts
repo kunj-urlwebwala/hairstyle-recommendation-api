@@ -9,7 +9,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "classic-layered-cut",
     name: "Classic layered cut",
     description: "Mid-length layers that build soft volume from the jaw down.",
-    whyItWorks: "Layering removes weight without losing length, so hair moves naturally.",
+    whyItWorks:
+      "Layering removes weight without losing length, so hair moves naturally.",
     maintenance: "Medium",
     texture: "Natural movement",
     tone: "Everyday classic",
@@ -20,7 +21,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "blunt-collarbone-bob",
     name: "Blunt collarbone bob",
     description: "A sharp, one-length cut ending exactly at the collarbone.",
-    whyItWorks: "The clean line reads polished while still feeling modern and light.",
+    whyItWorks:
+      "The clean line reads polished while still feeling modern and light.",
     maintenance: "Medium",
     texture: "Smooth finish",
     tone: "Minimal chic",
@@ -31,7 +33,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "curtain-fringe-waves",
     name: "Curtain fringe waves",
     description: "Loose waves with a wispy fringe that opens at the brow.",
-    whyItWorks: "The open fringe softens the frame while waves keep it effortless.",
+    whyItWorks:
+      "The open fringe softens the frame while waves keep it effortless.",
     maintenance: "Medium",
     texture: "Soft waves",
     tone: "Romantic",
@@ -42,7 +45,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "bridal-low-bun",
     name: "Bridal low bun",
     description: "A polished twisted bun set low at the nape.",
-    whyItWorks: "An elegant updo keeps attention on the outfit and jewellery-free hair drape.",
+    whyItWorks:
+      "An elegant updo keeps attention on the outfit and jewellery-free hair drape.",
     maintenance: "Low",
     texture: "Sleek updo",
     tone: "Wedding",
@@ -53,7 +57,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "braided-crown-updo",
     name: "Braided crown updo",
     description: "A soft braid wrapped around the crown into a gathered updo.",
-    whyItWorks: "Braids hold shape through long celebrations without heat styling.",
+    whyItWorks:
+      "Braids hold shape through long celebrations without heat styling.",
     maintenance: "Medium",
     texture: "Braid detail",
     tone: "Festive",
@@ -64,7 +69,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "long-soft-layers",
     name: "Long soft layers",
     description: "Waist-length hair with invisible layers for movement.",
-    whyItWorks: "Long layers keep density at the ends from looking heavy or flat.",
+    whyItWorks:
+      "Long layers keep density at the ends from looking heavy or flat.",
     maintenance: "Low",
     texture: "Flowing length",
     tone: "Traditional graceful",
@@ -75,7 +81,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "textured-pixie",
     name: "Textured pixie",
     description: "A short crop with piecey definition on top.",
-    whyItWorks: "Short cuts highlight bone structure and dry quickly in humid weather.",
+    whyItWorks:
+      "Short cuts highlight bone structure and dry quickly in humid weather.",
     maintenance: "High",
     texture: "Piecey crop",
     tone: "Confident minimal",
@@ -85,8 +92,10 @@ export const styleCatalog: HairstyleRecommendation[] = [
   {
     id: "shoulder-feather-cut",
     name: "Shoulder feather cut",
-    description: "Feathered ends flicked away from the face at shoulder length.",
-    whyItWorks: "Feathering adds bounce around the cheekbones without heavy styling.",
+    description:
+      "Feathered ends flicked away from the face at shoulder length.",
+    whyItWorks:
+      "Feathering adds bounce around the cheekbones without heavy styling.",
     maintenance: "Medium",
     texture: "Feathered ends",
     tone: "Retro fresh",
@@ -97,7 +106,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "deep-side-part-glam",
     name: "Deep side-part glam",
     description: "Glossy waves swept into a dramatic deep side part.",
-    whyItWorks: "A deep part instantly reads occasion-ready with minimal upkeep.",
+    whyItWorks:
+      "A deep part instantly reads occasion-ready with minimal upkeep.",
     maintenance: "High",
     texture: "Hollywood waves",
     tone: "Evening glam",
@@ -108,7 +118,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "shaggy-mid-length",
     name: "Shaggy mid-length",
     description: "A relaxed shag with curtain layers and airy texture.",
-    whyItWorks: "The shag's lived-in layers suit low-effort, air-dried routines.",
+    whyItWorks:
+      "The shag's lived-in layers suit low-effort, air-dried routines.",
     maintenance: "Low",
     texture: "Airy shag",
     tone: "Casual cool",
@@ -130,7 +141,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
     id: "short-professional-crop",
     name: "Short professional crop",
     description: "A neat ear-length crop with a tidy outline.",
-    whyItWorks: "Crisp edges stay office-appropriate through long working days.",
+    whyItWorks:
+      "Crisp edges stay office-appropriate through long working days.",
     maintenance: "Medium",
     texture: "Neat finish",
     tone: "Professional",
@@ -139,6 +151,8 @@ export const styleCatalog: HairstyleRecommendation[] = [
   },
 ];
 
-export function findCatalogStyle(id: string): HairstyleRecommendation | undefined {
+export function findCatalogStyle(
+  id: string,
+): HairstyleRecommendation | undefined {
   return styleCatalog.find((style) => style.id === id);
 }

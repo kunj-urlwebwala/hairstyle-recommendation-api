@@ -13,12 +13,18 @@ export function createApiServer() {
   // In development, allow the test client origin. Production should configure an explicit origin allowlist.
   app.use((req, res, next) => {
     const origin = req.headers.origin;
-    const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+    const configuredOrigins = (process.env.CORS_ALLOWED_ORIGINS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
     const isDevelopment = process.env.NODE_ENV !== "production";
     if (origin && (isDevelopment || configuredOrigins.includes(origin))) {
       res.header("Access-Control-Allow-Origin", origin);
     }
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, OPTIONS",
+    );
     res.header(
       "Access-Control-Allow-Headers",
       "Origin, X-Requested-With, Content-Type, Accept, Authorization",
@@ -39,7 +45,10 @@ export function createApiServer() {
   // Uploaded portraits and generated previews live on local disk.
   app.use(
     "/uploads",
-    express.static(path.resolve(ENV.storageDir), { maxAge: "30d", immutable: true }),
+    express.static(path.resolve(ENV.storageDir), {
+      maxAge: "30d",
+      immutable: true,
+    }),
   );
 
   app.get("/api/health", (_req, res) => {

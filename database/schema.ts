@@ -1,4 +1,7 @@
-import type { HairstyleRecommendation, StyleAnalysis } from "../shared/consultation";
+import type {
+  HairstyleRecommendation,
+  StyleAnalysis,
+} from "../shared/consultation";
 
 /**
  * User and feature table row types.

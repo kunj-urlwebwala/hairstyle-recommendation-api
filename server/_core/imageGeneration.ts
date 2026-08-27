@@ -28,14 +28,17 @@ export type GenerateImageResponse = {
   url?: string;
 };
 
-async function readImage(image: SourceImage): Promise<{ data: Buffer; mimeType: string }> {
+async function readImage(
+  image: SourceImage,
+): Promise<{ data: Buffer; mimeType: string }> {
   const mimeType = image.mimeType ?? "image/jpeg";
 
   if (image.b64Json) {
     return { data: Buffer.from(image.b64Json, "base64"), mimeType };
   }
 
-  if (!image.url) throw new Error("Source image has neither a URL nor inline data");
+  if (!image.url)
+    throw new Error("Source image has neither a URL nor inline data");
 
   const response = await fetch(image.url);
   if (!response.ok) {
@@ -45,13 +48,17 @@ async function readImage(image: SourceImage): Promise<{ data: Buffer; mimeType: 
   return { data: Buffer.from(arrayBuffer), mimeType };
 }
 
-async function generateWithGemini(options: GenerateImageOptions): Promise<Buffer> {
+async function generateWithGemini(
+  options: GenerateImageOptions,
+): Promise<Buffer> {
   if (!ENV.geminiApiKey) throw new Error("GEMINI_API_KEY is not configured");
 
   const parts: Record<string, unknown>[] = [{ text: options.prompt }];
   for (const image of options.originalImages ?? []) {
     const { data, mimeType } = await readImage(image);
-    parts.push({ inline_data: { mime_type: mimeType, data: data.toString("base64") } });
+    parts.push({
+      inline_data: { mime_type: mimeType, data: data.toString("base64") },
+    });
   }
 
   const body: Record<string, unknown> = {
@@ -83,7 +90,10 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<Buffer
   const result = (await response.json()) as {
     candidates?: Array<{
       content?: {
-        parts?: Array<{ inlineData?: { data?: string }; inline_data?: { data?: string } }>;
+        parts?: Array<{
+          inlineData?: { data?: string };
+          inline_data?: { data?: string };
+        }>;
       };
     }>;
   };
@@ -97,7 +107,9 @@ async function generateWithGemini(options: GenerateImageOptions): Promise<Buffer
   return Buffer.from(base64, "base64");
 }
 
-async function generateWithOpenAI(options: GenerateImageOptions): Promise<Buffer> {
+async function generateWithOpenAI(
+  options: GenerateImageOptions,
+): Promise<Buffer> {
   if (!ENV.openAiApiKey) throw new Error("OPENAI_API_KEY is not configured");
 
   const headers = { authorization: `Bearer ${ENV.openAiApiKey}` };
@@ -112,7 +124,11 @@ async function generateWithOpenAI(options: GenerateImageOptions): Promise<Buffer
 
     for (const [index, image] of options.originalImages.entries()) {
       const { data, mimeType } = await readImage(image);
-      form.append("image[]", new Blob([new Uint8Array(data)], { type: mimeType }), `source-${index}.png`);
+      form.append(
+        "image[]",
+        new Blob([new Uint8Array(data)], { type: mimeType }),
+        `source-${index}.png`,
+      );
     }
 
     response = await fetch("https://api.openai.com/v1/images/edits", {
@@ -139,13 +155,17 @@ async function generateWithOpenAI(options: GenerateImageOptions): Promise<Buffer
     );
   }
 
-  const result = (await response.json()) as { data?: Array<{ b64_json?: string }> };
+  const result = (await response.json()) as {
+    data?: Array<{ b64_json?: string }>;
+  };
   const base64 = result.data?.[0]?.b64_json;
   if (!base64) throw new Error("The OpenAI provider returned no image data");
   return Buffer.from(base64, "base64");
 }
 
-export async function generateImage(options: GenerateImageOptions): Promise<GenerateImageResponse> {
+export async function generateImage(
+  options: GenerateImageOptions,
+): Promise<GenerateImageResponse> {
   const model = options.model || ENV.tryOnPrimaryImageModel;
   const isGemini = model.startsWith("gemini");
 
@@ -153,6 +173,10 @@ export async function generateImage(options: GenerateImageOptions): Promise<Gene
     ? await generateWithGemini({ ...options, model })
     : await generateWithOpenAI({ ...options, model });
 
-  const { url } = await storagePut(`generated/${Date.now()}.png`, buffer, "image/png");
+  const { url } = await storagePut(
+    `generated/${Date.now()}.png`,
+    buffer,
+    "image/png",
+  );
   return { url };
 }
