@@ -113,6 +113,49 @@ async function invokeAnalysisWithFailover(messages: Parameters<typeof invokeLLM>
       console.warn("[hairstyle-service] analysis model unavailable", { model, error: error instanceof Error ? error.message : "unknown error" });
     }
   }
+
+  // MOCK FALLBACK: If all APIs fail (e.g., due to quota/billing limits), return a dummy response in development
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[hairstyle-service] ALL TEXT MODELS FAILED. Returning a mock analysis response.");
+    return {
+      response: {
+        id: "mock",
+        created: Date.now(),
+        model: "mock-model",
+        choices: [{
+          index: 0,
+          finish_reason: "stop",
+          message: {
+            role: "assistant",
+            content: JSON.stringify({
+              portraitCheck: { status: "ready" },
+              analysis: {
+                faceShape: "Oval",
+                overview: "This is a mock analysis because AI API quotas are exhausted.",
+                featureNotes: ["Mock feature 1", "Mock feature 2"],
+                stylePrinciples: ["Mock principle 1", "Mock principle 2"],
+                confidenceNote: "Mock confidence note."
+              },
+              recommendations: [
+                {
+                  id: "mock-style-1",
+                  name: "Mock Style",
+                  description: "A placeholder style.",
+                  whyItWorks: "Because the API is out of quota.",
+                  maintenance: "Low",
+                  texture: "Straight",
+                  tone: "Professional",
+                  prompt: "A beautiful mock hairstyle."
+                }
+              ]
+            })
+          }
+        }]
+      },
+      model: "mock-fallback-model",
+    };
+  }
+
   throw lastError instanceof Error ? lastError : new Error("No configured analysis model could return a response.");
 }
 
@@ -132,6 +175,16 @@ async function generateTryOnWithFailover(options: Parameters<typeof generateImag
       console.warn("[hairstyle-service] preview model unavailable", { model: model ?? "platform-default", error: error instanceof Error ? error.message : "unknown error" });
     }
   }
+  
+  // MOCK FALLBACK: If all APIs fail (e.g., due to quota/billing limits), return the original image as a mock try-on in development
+  if (process.env.NODE_ENV === "development") {
+    console.warn("[hairstyle-service] ALL IMAGE MODELS FAILED. Returning the original image as a mock try-on.");
+    return {
+      result: { url: options.originalImages?.[0]?.url || "https://placehold.co/600x800/png?text=Mock+Try-On" },
+      model: "mock-fallback-model",
+    };
+  }
+
   throw lastError instanceof Error ? lastError : new Error("No configured image model could create a preview.");
 }
 
@@ -161,7 +214,7 @@ export async function createConsultation(input: AnalyzeInput) {
           role: "user",
           content: [
             { type: "text", text: `Create an inclusive, practical hairstyle consultation. ${requirementContext(requirements)}` },
-            { type: "image_url", image_url: { url: sourceImageUrl, detail: "high" } },
+            { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${normalizedBase64(input.imageBase64)}`, detail: "high" } },
           ],
         },
       ]);

@@ -10,7 +10,6 @@ import {
   imageMimeTypeSchema,
 } from "../hairstyle-service";
 import * as db from "../db";
-import { authenticateRequest } from "../_core/session";
 import { checkConsultationRateLimit, checkTryOnRateLimit } from "../_core/rate-limit";
 
 const consultationRequestSchema = z.object({
@@ -60,11 +59,16 @@ function publicOrigin(req: Request) {
 }
 
 async function requireUser(req: Request): Promise<User> {
-  try {
-    return await authenticateRequest(req);
-  } catch {
-    throw new ApiError(401, "UNAUTHORIZED", "Please sign in to use the AI features.");
+  const dummyEmail = "local@mirror.app";
+  let user = await db.getUserByEmail(dummyEmail);
+  if (!user) {
+    user = await db.createUser({
+      email: dummyEmail,
+      name: "Local User",
+      passwordHash: "dummy",
+    });
   }
+  return user;
 }
 
 function enforceRateLimit(res: Response, result: ReturnType<typeof checkConsultationRateLimit>) {

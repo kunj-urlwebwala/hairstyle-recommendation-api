@@ -2,7 +2,6 @@ import "dotenv/config";
 import express from "express";
 import path from "path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
-import { registerAuthRoutes } from "./auth-routes";
 import { ENV } from "./env";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
@@ -43,8 +42,6 @@ export function createApiServer() {
     express.static(path.resolve(ENV.storageDir), { maxAge: "30d", immutable: true }),
   );
 
-  registerAuthRoutes(app);
-
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
   });
@@ -58,6 +55,14 @@ export function createApiServer() {
       createContext,
     }),
   );
+
+  // Serve the Expo web build from dist/ so the phone browser can access the app
+  // at the same origin as the API (http://192.168.0.x:3000).
+  const distDir = path.resolve(process.cwd(), "dist");
+  app.use(express.static(distDir));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(distDir, "index.html"));
+  });
 
   return app;
 }

@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-import { COOKIE_NAME } from "../shared/const.js";
 import {
   createConsultation,
   createTryOn,
@@ -8,7 +7,6 @@ import {
   imageMimeTypeSchema,
 } from "./hairstyle-service";
 import { persistConsultation } from "./api/v1-hairstyle-router";
-import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 
@@ -23,14 +21,6 @@ function publicOrigin(req: any) {
 
 export const appRouter = router({
   system: systemRouter,
-  auth: router({
-    me: publicProcedure.query((opts) => opts.ctx.user),
-    logout: publicProcedure.mutation(({ ctx }) => {
-      const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return { success: true } as const;
-    }),
-  }),
   // Retained for the MVP tester. External integrations should use /api/v1/hairstyle/*.
   consultation: router({
     analyze: protectedProcedure
