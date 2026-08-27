@@ -1,4 +1,9 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import { z } from "zod";
 
 import type { User } from "../../database/schema";
@@ -6,11 +11,15 @@ import {
   ApiError,
   createConsultation,
   createTryOn,
+  createDirectGrid,
   customerRequirementsSchema,
   imageMimeTypeSchema,
 } from "../hairstyle-service";
 import * as db from "../db";
-import { checkConsultationRateLimit, checkTryOnRateLimit } from "../_core/rate-limit";
+import {
+  checkConsultationRateLimit,
+  checkTryOnRateLimit,
+} from "../_core/rate-limit";
 
 const consultationRequestSchema = z.object({
   image: z.object({
@@ -26,12 +35,15 @@ const tryOnRequestSchema = z.object({
   style: z.object({
     id: z.string().trim().max(100).optional(),
     name: z.string().trim().min(2).max(80),
-    prompt: z.string().trim().min(10).max(900),
+    prompt: z.string().trim().min(10).max(3500),
   }),
 });
 
 const savedLookRequestSchema = z.object({
-  consultationId: z.string().trim().regex(/^con_[a-z0-9]{12}$/),
+  consultationId: z
+    .string()
+    .trim()
+    .regex(/^con_[a-z0-9]{12}$/),
   recommendation: z.object({
     id: z.string().trim().min(1).max(100),
     name: z.string().trim().min(1).max(80),
@@ -46,7 +58,10 @@ const savedLookRequestSchema = z.object({
 });
 
 function requestId(req: Request) {
-  return (req.headers["x-request-id"] as string | undefined) ?? `req_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`;
+  return (
+    (req.headers["x-request-id"] as string | undefined) ??
+    `req_${crypto.randomUUID().replace(/-/g, "").slice(0, 16)}`
+  );
 }
 
 function publicOrigin(req: Request) {
@@ -54,7 +69,12 @@ function publicOrigin(req: Request) {
   const forwardedHost = req.header("x-forwarded-host")?.split(",")[0];
   const protocol = forwardedProtocol ?? req.protocol ?? "https";
   const host = forwardedHost ?? req.get("host");
-  if (!host) throw new ApiError(500, "INTERNAL_ERROR", "Unable to resolve the API public origin.");
+  if (!host)
+    throw new ApiError(
+      500,
+      "INTERNAL_ERROR",
+      "Unable to resolve the API public origin.",
+    );
   return `${protocol}://${host}`;
 }
 
@@ -71,7 +91,10 @@ async function requireUser(req: Request): Promise<User> {
   return user;
 }
 
-function enforceRateLimit(res: Response, result: ReturnType<typeof checkConsultationRateLimit>) {
+function enforceRateLimit(
+  res: Response,
+  result: ReturnType<typeof checkConsultationRateLimit>,
+) {
   if (!result.allowed) {
     res.setHeader("Retry-After", String(result.retryAfterSeconds));
     throw new ApiError(
@@ -84,13 +107,34 @@ function enforceRateLimit(res: Response, result: ReturnType<typeof checkConsulta
 
 function sendError(res: Response, id: string, error: unknown) {
   if (error instanceof z.ZodError) {
-    return res.status(400).json({ error: { code: "VALIDATION_ERROR", message: "The request body is invalid.", details: error.flatten(), requestId: id } });
+    return res
+      .status(400)
+      .json({
+        error: {
+          code: "VALIDATION_ERROR",
+          message: "The request body is invalid.",
+          details: error.flatten(),
+          requestId: id,
+        },
+      });
   }
   if (error instanceof ApiError) {
-    return res.status(error.status).json({ error: { code: error.code, message: error.message, requestId: id } });
+    return res
+      .status(error.status)
+      .json({
+        error: { code: error.code, message: error.message, requestId: id },
+      });
   }
   console.error("[v1-hairstyle-router] unhandled error", error);
-  return res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "An unexpected server error occurred.", requestId: id } });
+  return res
+    .status(500)
+    .json({
+      error: {
+        code: "INTERNAL_ERROR",
+        message: "An unexpected server error occurred.",
+        requestId: id,
+      },
+    });
 }
 
 /** Store a finished consultation so the customer's history survives reloads. */
@@ -110,10 +154,16 @@ export async function persistConsultation(
   });
 }
 
-function isInternalPreviewUrl(previewImageUrl: string, origin: string): boolean {
+function isInternalPreviewUrl(
+  previewImageUrl: string,
+  origin: string,
+): boolean {
   try {
     const parsed = new URL(previewImageUrl);
-    return parsed.origin === origin && parsed.pathname.startsWith("/uploads/generated/");
+    return (
+      parsed.origin === origin &&
+      parsed.pathname.startsWith("/uploads/generated/")
+    );
   } catch {
     return false;
   }
@@ -130,7 +180,10 @@ export function createV1HairstyleRouter() {
   });
 
   router.get("/health", (_req, res) => {
-    res.json({ data: { status: "ok", service: "mirror-hairstyle-mvp" }, meta: { requestId: res.locals.requestId, apiVersion: "v1" } });
+    res.json({
+      data: { status: "ok", service: "mirror-hairstyle-mvp" },
+      meta: { requestId: res.locals.requestId, apiVersion: "v1" },
+    });
   });
 
   router.post("/hairstyle/consultations", async (req, res) => {
@@ -148,7 +201,12 @@ export function createV1HairstyleRouter() {
       });
       await persistConsultation(user.id, consultation);
 
-      return res.status(201).json({ data: { consultation }, meta: { requestId: id, apiVersion: "v1" } });
+      return res
+        .status(201)
+        .json({
+          data: { consultation },
+          meta: { requestId: id, apiVersion: "v1" },
+        });
     } catch (error) {
       return sendError(res, id, error);
     }
@@ -161,8 +219,42 @@ export function createV1HairstyleRouter() {
       enforceRateLimit(res, checkTryOnRateLimit(user.id));
 
       const input = tryOnRequestSchema.parse(req.body);
-      const tryOn = await createTryOn({ ...input, publicOrigin: publicOrigin(req) });
-      return res.status(201).json({ data: { tryOn }, meta: { requestId: id, apiVersion: "v1" } });
+      const tryOn = await createTryOn({
+        ...input,
+        publicOrigin: publicOrigin(req),
+      });
+      return res
+        .status(201)
+        .json({ data: { tryOn }, meta: { requestId: id, apiVersion: "v1" } });
+    } catch (error) {
+      return sendError(res, id, error);
+    }
+  });
+
+  router.post("/hairstyle/direct-grid", async (req, res) => {
+    const id = res.locals.requestId as string;
+    try {
+      const user = await requireUser(req);
+      enforceRateLimit(res, checkTryOnRateLimit(user.id));
+
+      const input = z
+        .object({
+          imageBase64: z.string(),
+          mimeType: imageMimeTypeSchema,
+        })
+        .parse(req.body);
+
+      const result = await createDirectGrid({
+        ...input,
+        publicOrigin: publicOrigin(req),
+      });
+
+      // Persist the dummy consultation so that the "Saved" tab works
+      await persistConsultation(user.id, result.consultation);
+
+      return res
+        .status(201)
+        .json({ data: result, meta: { requestId: id, apiVersion: "v1" } });
     } catch (error) {
       return sendError(res, id, error);
     }
@@ -200,10 +292,18 @@ export function createV1HairstyleRouter() {
         (record) => record.id === input.consultationId,
       );
       if (!owned) {
-        throw new ApiError(400, "UNKNOWN_CONSULTATION", "This look is not linked to one of your consultations.");
+        throw new ApiError(
+          400,
+          "UNKNOWN_CONSULTATION",
+          "This look is not linked to one of your consultations.",
+        );
       }
       if (!isInternalPreviewUrl(input.previewImageUrl, publicOrigin(req))) {
-        throw new ApiError(400, "INVALID_PREVIEW_URL", "Only previews generated by Mirror can be saved.");
+        throw new ApiError(
+          400,
+          "INVALID_PREVIEW_URL",
+          "Only previews generated by Mirror can be saved.",
+        );
       }
 
       const look = await db.createSavedLook({
@@ -237,14 +337,24 @@ export function createV1HairstyleRouter() {
       const user = await requireUser(req);
       const removed = await db.deleteSavedLook(user.id, req.params.id);
       if (!removed) {
-        throw new ApiError(404, "SAVED_LOOK_NOT_FOUND", "That saved look no longer exists.");
+        throw new ApiError(
+          404,
+          "SAVED_LOOK_NOT_FOUND",
+          "That saved look no longer exists.",
+        );
       }
-      return res.json({ data: { success: true }, meta: { requestId: id, apiVersion: "v1" } });
+      return res.json({
+        data: { success: true },
+        meta: { requestId: id, apiVersion: "v1" },
+      });
     } catch (error) {
       return sendError(res, id, error);
     }
   });
 
-  router.use((error: unknown, _req: Request, res: Response, _next: NextFunction) => sendError(res, res.locals.requestId ?? "req_unknown", error));
+  router.use(
+    (error: unknown, _req: Request, res: Response, _next: NextFunction) =>
+      sendError(res, res.locals.requestId ?? "req_unknown", error),
+  );
   return router;
 }

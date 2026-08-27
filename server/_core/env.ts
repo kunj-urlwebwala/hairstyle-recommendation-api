@@ -8,12 +8,16 @@ export const ENV = {
   openAiApiKey: process.env.OPENAI_API_KEY ?? "",
 
   // Text analysis models, tried in order until one responds.
-  analysisPrimaryModel: process.env.AI_ANALYSIS_PRIMARY_MODEL ?? "gemini-3.6-flash",
-  analysisFallbackModel: process.env.AI_ANALYSIS_FALLBACK_MODEL ?? "gpt-4o-mini",
+  analysisPrimaryModel:
+    process.env.AI_ANALYSIS_PRIMARY_MODEL ?? "gemini-3.6-flash",
+  analysisFallbackModel:
+    process.env.AI_ANALYSIS_FALLBACK_MODEL ?? "gpt-4o-mini",
 
   // Virtual try-on image models, tried in order until one responds.
-  tryOnPrimaryImageModel: process.env.AI_TRYON_PRIMARY_IMAGE_MODEL ?? "gemini-3.1-flash-image",
-  tryOnFallbackImageModel: process.env.AI_TRYON_FALLBACK_IMAGE_MODEL ?? "gpt-image-1",
+  tryOnPrimaryImageModel:
+    process.env.AI_TRYON_PRIMARY_IMAGE_MODEL ?? "gemini-3.1-flash-image",
+  tryOnFallbackImageModel:
+    process.env.AI_TRYON_FALLBACK_IMAGE_MODEL ?? "gpt-image-1",
   tryOnImageQuality: process.env.AI_TRYON_IMAGE_QUALITY ?? "medium",
 
   // Uploaded portraits and generated previews are written here.

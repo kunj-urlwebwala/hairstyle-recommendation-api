@@ -48,8 +48,9 @@ export type InvokeResult = {
   };
 };
 
-const ensureArray = (value: MessageContent | MessageContent[]): MessageContent[] =>
-  Array.isArray(value) ? value : [value];
+const ensureArray = (
+  value: MessageContent | MessageContent[],
+): MessageContent[] => (Array.isArray(value) ? value : [value]);
 
 const normalizeMessage = (message: Message) => {
   const parts = ensureArray(message.content);
@@ -88,10 +89,14 @@ const RETRY_MAX_RETRIES = 3;
 const RETRY_BASE_DELAY_MS = 500;
 const RETRY_MAX_DELAY_MS = 15_000;
 
-const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 // Equal-jitter exponential backoff so a failing upstream is not hammered.
-const computeBackoffDelay = (attempt: number, retryAfterMs?: number): number => {
+const computeBackoffDelay = (
+  attempt: number,
+  retryAfterMs?: number,
+): number => {
   const cap = Math.min(RETRY_BASE_DELAY_MS * 2 ** attempt, RETRY_MAX_DELAY_MS);
   const jittered = cap / 2 + Math.random() * (cap / 2);
   return Math.min(Math.max(jittered, retryAfterMs ?? 0), RETRY_MAX_DELAY_MS);
@@ -129,12 +134,16 @@ const fetchWithBackoff = async (
     } catch (error) {
       lastError = error;
       if (attempt === RETRY_MAX_RETRIES) throw error;
-      console.warn(`LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`);
+      console.warn(
+        `LLM request retry ${attempt + 1}/${RETRY_MAX_RETRIES} after network error`,
+      );
       await sleep(computeBackoffDelay(attempt));
     }
   }
 
-  throw lastError instanceof Error ? lastError : new Error("LLM request failed after retries");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("LLM request failed after retries");
 };
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
@@ -165,7 +174,9 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`);
+    throw new Error(
+      `LLM invoke failed: ${response.status} ${response.statusText} – ${errorText}`,
+    );
   }
 
   return (await response.json()) as InvokeResult;

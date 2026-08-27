@@ -6,19 +6,31 @@ import { ENV } from "./_core/env";
 import { invokeLLM } from "./_core/llm";
 import { storagePut } from "./storage";
 
-export const imageMimeTypeSchema = z.enum(["image/jpeg", "image/png", "image/webp"]);
+export const imageMimeTypeSchema = z.enum([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+]);
 export type ImageMimeType = z.infer<typeof imageMimeTypeSchema>;
 
-export const customerRequirementsSchema = z.object({
-  prompt: z.string().trim().min(2).max(500).optional(),
-  occasion: z.enum(["everyday", "professional", "festive", "wedding", "other"]).optional(),
-  lengthPreference: z.enum(["short", "medium", "long", "open"]).optional(),
-  maintenancePreference: z.enum(["low", "medium", "high", "open"]).optional(),
-}).default({});
+export const customerRequirementsSchema = z
+  .object({
+    prompt: z.string().trim().min(2).max(500).optional(),
+    occasion: z
+      .enum(["everyday", "professional", "festive", "wedding", "other"])
+      .optional(),
+    lengthPreference: z.enum(["short", "medium", "long", "open"]).optional(),
+    maintenancePreference: z.enum(["low", "medium", "high", "open"]).optional(),
+  })
+  .default({});
 export type CustomerRequirements = z.infer<typeof customerRequirementsSchema>;
 
 export class ApiError extends Error {
-  constructor(public readonly status: number, public readonly code: string, message: string) {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+  ) {
     super(message);
     this.name = "ApiError";
   }
@@ -56,10 +68,16 @@ function extensionFor(mimeType: ImageMimeType) {
 
 function requirementContext(requirements: CustomerRequirements) {
   const values = [
-    requirements.prompt ? `Customer request: ${requirements.prompt}` : "Customer request: not specified.",
+    requirements.prompt
+      ? `Customer request: ${requirements.prompt}`
+      : "Customer request: not specified.",
     requirements.occasion ? `Occasion: ${requirements.occasion}.` : null,
-    requirements.lengthPreference ? `Length preference: ${requirements.lengthPreference}.` : null,
-    requirements.maintenancePreference ? `Maintenance preference: ${requirements.maintenancePreference}.` : null,
+    requirements.lengthPreference
+      ? `Length preference: ${requirements.lengthPreference}.`
+      : null,
+    requirements.maintenancePreference
+      ? `Maintenance preference: ${requirements.maintenancePreference}.`
+      : null,
   ].filter(Boolean);
   return values.join(" ");
 }
@@ -101,69 +119,93 @@ Provide exactly four varied recommendations. The edit prompt must describe hair 
 
 const tryOnPreservationGuardrails = `Edit the reference portrait with extreme restraint. Preserve the person's original face, identity, facial structure, skin tone and texture, eyes, nose, lips, beard or facial hair, expression, apparent age, body, clothing, pose, crop, background, lighting, camera angle, and image realism. Change only scalp hair and hairstyle. Do not beautify, smooth skin, reshape any face feature, alter beard, add hair accessories, add jewellery, alter makeup, recolor skin, alter clothing, or add non-hair objects. Keep the hairline believable and natural, retain credible texture, and create a realistic salon preview.`;
 
-async function invokeAnalysisWithFailover(messages: Parameters<typeof invokeLLM>[0]["messages"]) {
-  const candidates = [...new Set([ENV.analysisPrimaryModel, ENV.analysisFallbackModel].filter(Boolean))];
+async function invokeAnalysisWithFailover(
+  messages: Parameters<typeof invokeLLM>[0]["messages"],
+) {
+  const candidates = [
+    ...new Set(
+      [ENV.analysisPrimaryModel, ENV.analysisFallbackModel].filter(Boolean),
+    ),
+  ];
   let lastError: unknown;
   for (const model of candidates) {
     try {
-      const response = await invokeLLM({ model, messages, responseFormat: { type: "json_object" } });
+      const response = await invokeLLM({
+        model,
+        messages,
+        responseFormat: { type: "json_object" },
+      });
       return { response, model };
     } catch (error) {
       lastError = error;
-      console.warn("[hairstyle-service] analysis model unavailable", { model, error: error instanceof Error ? error.message : "unknown error" });
+      console.warn("[hairstyle-service] analysis model unavailable", {
+        model,
+        error: error instanceof Error ? error.message : "unknown error",
+      });
     }
   }
 
   // MOCK FALLBACK: If all APIs fail (e.g., due to quota/billing limits), return a dummy response in development
   if (process.env.NODE_ENV === "development") {
-    console.warn("[hairstyle-service] ALL TEXT MODELS FAILED. Returning a mock analysis response.");
+    console.warn(
+      "[hairstyle-service] ALL TEXT MODELS FAILED. Returning a mock analysis response.",
+    );
     return {
       response: {
         id: "mock",
         created: Date.now(),
         model: "mock-model",
-        choices: [{
-          index: 0,
-          finish_reason: "stop",
-          message: {
-            role: "assistant",
-            content: JSON.stringify({
-              portraitCheck: { status: "ready" },
-              analysis: {
-                faceShape: "Oval",
-                overview: "This is a mock analysis because AI API quotas are exhausted.",
-                featureNotes: ["Mock feature 1", "Mock feature 2"],
-                stylePrinciples: ["Mock principle 1", "Mock principle 2"],
-                confidenceNote: "Mock confidence note."
-              },
-              recommendations: [
-                {
-                  id: "mock-style-1",
-                  name: "Mock Style",
-                  description: "A placeholder style.",
-                  whyItWorks: "Because the API is out of quota.",
-                  maintenance: "Low",
-                  texture: "Straight",
-                  tone: "Professional",
-                  prompt: "A beautiful mock hairstyle."
-                }
-              ]
-            })
-          }
-        }]
+        choices: [
+          {
+            index: 0,
+            finish_reason: "stop",
+            message: {
+              role: "assistant",
+              content: JSON.stringify({
+                portraitCheck: { status: "ready" },
+                analysis: {
+                  faceShape: "Oval",
+                  overview:
+                    "This is a mock analysis because AI API quotas are exhausted.",
+                  featureNotes: ["Mock feature 1", "Mock feature 2"],
+                  stylePrinciples: ["Mock principle 1", "Mock principle 2"],
+                  confidenceNote: "Mock confidence note.",
+                },
+                recommendations: [
+                  {
+                    id: "mock-style-1",
+                    name: "Mock Style",
+                    description: "A placeholder style.",
+                    whyItWorks: "Because the API is out of quota.",
+                    maintenance: "Low",
+                    texture: "Straight",
+                    tone: "Professional",
+                    prompt: "A beautiful mock hairstyle.",
+                  },
+                ],
+              }),
+            },
+          },
+        ],
       },
       model: "mock-fallback-model",
     };
   }
 
-  throw lastError instanceof Error ? lastError : new Error("No configured analysis model could return a response.");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("No configured analysis model could return a response.");
 }
 
-async function generateTryOnWithFailover(options: Parameters<typeof generateImage>[0]) {
-  const candidates = [...new Set<string | null>([
-    ENV.tryOnPrimaryImageModel || null,
-    ENV.tryOnFallbackImageModel || null,
-  ])];
+async function generateTryOnWithFailover(
+  options: Parameters<typeof generateImage>[0],
+) {
+  const candidates = [
+    ...new Set<string | null>([
+      ENV.tryOnPrimaryImageModel || null,
+      ENV.tryOnFallbackImageModel || null,
+    ]),
+  ];
   let lastError: unknown;
   for (const model of candidates) {
     try {
@@ -172,79 +214,169 @@ async function generateTryOnWithFailover(options: Parameters<typeof generateImag
       throw new Error("The image provider returned no preview URL.");
     } catch (error) {
       lastError = error;
-      console.warn("[hairstyle-service] preview model unavailable", { model: model ?? "platform-default", error: error instanceof Error ? error.message : "unknown error" });
+      console.warn("[hairstyle-service] preview model unavailable", {
+        model: model ?? "platform-default",
+        error: error instanceof Error ? error.message : "unknown error",
+      });
     }
   }
-  
+
   // MOCK FALLBACK: If all APIs fail (e.g., due to quota/billing limits), return the original image as a mock try-on in development
   if (process.env.NODE_ENV === "development") {
-    console.warn("[hairstyle-service] ALL IMAGE MODELS FAILED. Returning the original image as a mock try-on.");
+    console.warn(
+      "[hairstyle-service] ALL IMAGE MODELS FAILED. Returning the original image as a mock try-on.",
+    );
     return {
-      result: { url: options.originalImages?.[0]?.url || "https://placehold.co/600x800/png?text=Mock+Try-On" },
+      result: {
+        url:
+          options.originalImages?.[0]?.url ||
+          "https://placehold.co/600x800/png?text=Mock+Try-On",
+      },
       model: "mock-fallback-model",
     };
   }
 
-  throw lastError instanceof Error ? lastError : new Error("No configured image model could create a preview.");
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("No configured image model could create a preview.");
 }
 
-function ensureInternalStoredPortrait(sourceImageUrl: string, publicOrigin: string) {
+function ensureInternalStoredPortrait(
+  sourceImageUrl: string,
+  publicOrigin: string,
+) {
   const parsed = new URL(sourceImageUrl);
   const publicUrl = new URL(publicOrigin);
-  if (parsed.origin !== publicUrl.origin || !parsed.pathname.startsWith("/uploads/consultations/")) {
-    throw new ApiError(400, "INVALID_SOURCE_IMAGE", "The source image must be a portrait returned by the consultation API.");
+  if (
+    parsed.origin !== publicUrl.origin ||
+    !parsed.pathname.startsWith("/uploads/consultations/")
+  ) {
+    throw new ApiError(
+      400,
+      "INVALID_SOURCE_IMAGE",
+      "The source image must be a portrait returned by the consultation API.",
+    );
   }
 }
 
 export async function createConsultation(input: AnalyzeInput) {
-  const requirements = customerRequirementsSchema.parse(input.requirements ?? {});
-  const imageBuffer = Buffer.from(normalizedBase64(input.imageBase64), "base64");
+  const requirements = customerRequirementsSchema.parse(
+    input.requirements ?? {},
+  );
+  const imageBuffer = Buffer.from(
+    normalizedBase64(input.imageBase64),
+    "base64",
+  );
   if (imageBuffer.length < 100 || imageBuffer.length > 10_000_000) {
-    throw new ApiError(400, "INVALID_IMAGE", "Please provide a JPEG, PNG, or WebP portrait smaller than 10 MB.");
+    throw new ApiError(
+      400,
+      "INVALID_IMAGE",
+      "Please provide a JPEG, PNG, or WebP portrait smaller than 10 MB.",
+    );
   }
 
   const consultationId = `con_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
-  const { url } = await storagePut(`consultations/${consultationId}.${extensionFor(input.mimeType)}`, imageBuffer, input.mimeType);
+  const { url } = await storagePut(
+    `consultations/${consultationId}.${extensionFor(input.mimeType)}`,
+    imageBuffer,
+    input.mimeType,
+  );
   const sourceImageUrl = storageUrl(input.publicOrigin, url);
 
   try {
     const { response, model } = await invokeAnalysisWithFailover([
-        { role: "system", content: analysisSystemPrompt },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: `Create an inclusive, practical hairstyle consultation. ${requirementContext(requirements)}` },
-            { type: "image_url", image_url: { url: `data:${input.mimeType};base64,${normalizedBase64(input.imageBase64)}`, detail: "high" } },
-          ],
-        },
-      ]);
+      { role: "system", content: analysisSystemPrompt },
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: `Create an inclusive, practical hairstyle consultation. ${requirementContext(requirements)}`,
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${input.mimeType};base64,${normalizedBase64(input.imageBase64)}`,
+              detail: "high",
+            },
+          },
+        ],
+      },
+    ]);
     const content = response.choices[0]?.message?.content;
-    if (typeof content !== "string") throw new Error("No usable analysis content was returned.");
+    if (typeof content !== "string")
+      throw new Error("No usable analysis content was returned.");
     const parsed = parseStyleAnalysis(content);
     if (parsed.portraitCheck.status === "retake") {
-      throw new ApiError(422, "PHOTO_RETAKE_REQUIRED", parsed.portraitCheck.message);
+      throw new ApiError(
+        422,
+        "PHOTO_RETAKE_REQUIRED",
+        parsed.portraitCheck.message,
+      );
     }
-    return { id: consultationId, sourceImageUrl, requirements, analysisModel: model, ...parsed };
+    return {
+      id: consultationId,
+      sourceImageUrl,
+      requirements,
+      analysisModel: model,
+      ...parsed,
+    };
   } catch (error) {
     if (error instanceof ApiError) throw error;
-    console.error("[hairstyle-service] analysis provider failed", error instanceof Error ? error.message : "unknown error");
-    throw new ApiError(502, "AI_PROVIDER_ERROR", "The hairstyle analysis provider could not produce a consultation. Please try again.");
+    console.error(
+      "[hairstyle-service] analysis provider failed",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    throw new ApiError(
+      502,
+      "AI_PROVIDER_ERROR",
+      "The hairstyle analysis provider could not produce a consultation. Please try again.",
+    );
   }
 }
 
 export async function createTryOn(input: TryOnInput) {
   ensureInternalStoredPortrait(input.sourceImageUrl, input.publicOrigin);
-  if (input.style.name.trim().length < 2 || input.style.name.length > 80 || input.style.prompt.trim().length < 10 || input.style.prompt.length > 900) {
-    throw new ApiError(400, "VALIDATION_ERROR", "Please provide a valid selected hairstyle.");
+  if (
+    input.style.name.trim().length < 2 ||
+    input.style.name.length > 80 ||
+    input.style.prompt.trim().length < 10 ||
+    input.style.prompt.length > 3500
+  ) {
+    throw new ApiError(
+      400,
+      "VALIDATION_ERROR",
+      "Please provide a valid selected hairstyle.",
+    );
   }
+
+  const isGrid =
+    input.style.id === "all_styles_grid" ||
+    input.style.name.toLowerCase().includes("grid");
+
+  const finalPrompt = isGrid
+    ? `Create a high quality photographic 2x2 collage grid showing the person from the reference portrait with 4 different hairstyles.
+COMPOSITION RULES (CRITICAL):
+- The output image MUST be a symmetrical 2x2 grid consisting of EXACTLY 4 square portraits.
+- The grid must have exactly 2 columns and exactly 2 rows.
+- DO NOT generate more than 2 faces per row. DO NOT leave partial faces on the edges.
+- Each quadrant must feature exactly 1 face, perfectly centered.
+- Top-Left quadrant: style 1. Top-Right quadrant: style 2. Bottom-Left quadrant: style 3. Bottom-Right quadrant: style 4.
+- Styles requested: ${input.style.prompt}
+- Facial identity, facial features, skin tone, clothing, and camera angle must be 100% identical in all 4 quadrants.
+STRICT NEGATIVE CONSTRAINTS:
+- Do NOT generate 5 or 6 faces. Strictly 4 faces total.
+- Do NOT add any text, numbers, labels, or watermarks.`
+    : `Create a realistic virtual hairstyle try-on. Requested hairstyle: ${input.style.name}. Hairstyle description: ${input.style.prompt}\n\n${tryOnPreservationGuardrails}`;
 
   try {
     const { result, model } = await generateTryOnWithFailover({
-      prompt: `Create a realistic virtual hairstyle try-on. Requested hairstyle: ${input.style.name}. Hairstyle description: ${input.style.prompt}\n\n${tryOnPreservationGuardrails}`,
+      prompt: finalPrompt,
       originalImages: [{ url: input.sourceImageUrl, mimeType: input.mimeType }],
       quality: ENV.tryOnImageQuality,
     });
-    if (!result.url) throw new Error("The image provider returned no preview URL.");
+    if (!result.url)
+      throw new Error("The image provider returned no preview URL.");
     return {
       id: `try_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`,
       previewImageUrl: storageUrl(input.publicOrigin, result.url),
@@ -255,7 +387,133 @@ export async function createTryOn(input: TryOnInput) {
       generationModel: model,
     };
   } catch (error) {
-    console.error("[hairstyle-service] image provider failed", error instanceof Error ? error.message : "unknown error");
-    throw new ApiError(502, "AI_PROVIDER_ERROR", "The virtual try-on provider could not create a preview. Please try again.");
+    console.error(
+      "[hairstyle-service] image provider failed",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    throw new ApiError(
+      502,
+      "AI_PROVIDER_ERROR",
+      "The virtual try-on provider could not create a preview. Please try again.",
+    );
+  }
+}
+
+export async function createDirectGrid(input: {
+  imageBase64: string;
+  mimeType: string;
+  publicOrigin: string;
+}) {
+  const buffer = Buffer.from(input.imageBase64, "base64");
+  const { url: relUrl } = await storagePut(
+    `portraits/${Date.now()}.png`,
+    buffer,
+    input.mimeType,
+  );
+  const sourceImageUrl = storageUrl(input.publicOrigin, relUrl);
+
+  const finalPrompt = `Create a high quality photographic 2x2 collage grid showing the person from the reference portrait with 4 different hairstyles.
+COMPOSITION RULES (CRITICAL):
+- The output image MUST be a symmetrical 2x2 grid consisting of EXACTLY 4 square portraits.
+- The grid must have exactly 2 columns and exactly 2 rows.
+- DO NOT generate more than 2 faces per row. DO NOT leave partial faces on the edges.
+- Each quadrant must feature exactly 1 face, perfectly centered.
+- Top-Left quadrant: Textured Crop Fade. Top-Right quadrant: Classic Side-Swept. Bottom-Left quadrant: Soft Tapered Quiff. Bottom-Right quadrant: Layered Forward Fringe.
+- Facial identity, facial features, skin tone, clothing, and camera angle must be 100% identical in all 4 quadrants.
+STRICT NEGATIVE CONSTRAINTS:
+- Do NOT generate 5 or 6 faces. Strictly 4 faces total.
+- Do NOT add any text, numbers, labels, or watermarks.`;
+
+  try {
+    const { result, model } = await generateTryOnWithFailover({
+      prompt: finalPrompt,
+      originalImages: [{ url: sourceImageUrl, mimeType: input.mimeType }],
+      quality: ENV.tryOnImageQuality,
+    });
+    if (!result.url)
+      throw new Error("The image provider returned no preview URL.");
+
+    const consultationId = `con_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+
+    const recommendations = [
+      {
+        id: "rec_1",
+        name: "Textured Crop Fade",
+        description: "A modern textured crop with a clean fade.",
+        whyItWorks: "Balances facial proportions.",
+        maintenance: "Medium",
+        texture: "Straight/Wavy",
+        tone: "Modern",
+        prompt: "",
+      },
+      {
+        id: "rec_2",
+        name: "Classic Side-Swept",
+        description: "A timeless side-swept style.",
+        whyItWorks: "Versatile for any occasion.",
+        maintenance: "Low",
+        texture: "Any",
+        tone: "Classic",
+        prompt: "",
+      },
+      {
+        id: "rec_3",
+        name: "Soft Tapered Quiff",
+        description: "A soft quiff with tapered sides.",
+        whyItWorks: "Adds height and structure.",
+        maintenance: "Medium",
+        texture: "Wavy",
+        tone: "Trendy",
+        prompt: "",
+      },
+      {
+        id: "rec_4",
+        name: "Layered Forward Fringe",
+        description: "Layered fringe pushed forward.",
+        whyItWorks: "Conceals the hairline naturally.",
+        maintenance: "High",
+        texture: "Wavy",
+        tone: "Edgy",
+        prompt: "",
+      },
+    ] as any;
+
+    const consultation = {
+      id: consultationId,
+      sourceImageUrl,
+      portraitCheck: {
+        status: "ready" as const,
+        message: "Portrait is good.",
+        isUsable: true,
+        reasoning: "Direct generation bypasses portrait check",
+        estimatedSubjectGender: "male" as const,
+      },
+      requirements: {},
+      analysisModel: "direct_grid_bypass",
+      analysis: {
+        faceShape: "Analyzed",
+        overview: "Direct 4-in-1 generation.",
+        featureNotes: [],
+        stylePrinciples: [],
+        confidenceNote: "Direct Generation",
+      },
+      recommendations,
+    };
+
+    return {
+      consultation,
+      previewImageUrl: storageUrl(input.publicOrigin, result.url),
+      generationModel: model,
+    };
+  } catch (error) {
+    console.error(
+      "[hairstyle-service] direct grid failed",
+      error instanceof Error ? error.message : "unknown error",
+    );
+    throw new ApiError(
+      502,
+      "AI_PROVIDER_ERROR",
+      "Could not generate the 4-in-1 grid. Please try again.",
+    );
   }
 }

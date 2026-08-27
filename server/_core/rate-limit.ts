@@ -21,7 +21,11 @@ export type RateLimitResult = {
   retryAfterSeconds: number;
 };
 
-export function consumeRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+export function consumeRateLimit(
+  key: string,
+  limit: number,
+  windowMs: number,
+): RateLimitResult {
   const now = Date.now();
   const existing = prune(buckets.get(key) ?? [], now, windowMs);
 
@@ -38,7 +42,11 @@ export function consumeRateLimit(key: string, limit: number, windowMs: number): 
 
   const updated = [...existing, now];
   buckets.set(key, updated);
-  return { allowed: true, remaining: limit - updated.length, retryAfterSeconds: 0 };
+  return {
+    allowed: true,
+    remaining: limit - updated.length,
+    retryAfterSeconds: 0,
+  };
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -49,7 +57,11 @@ const LIMITS = {
 };
 
 export function checkConsultationRateLimit(userId: number): RateLimitResult {
-  return consumeRateLimit(`consultation:${userId}`, LIMITS.consultation || 15, DAY_MS);
+  return consumeRateLimit(
+    `consultation:${userId}`,
+    LIMITS.consultation || 15,
+    DAY_MS,
+  );
 }
 
 export function checkTryOnRateLimit(userId: number): RateLimitResult {
